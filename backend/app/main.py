@@ -66,18 +66,20 @@ def get_me(
 
 @app.get("/health")
 def health_check(db: Session = Depends(get_db)):
-    database_status = "down"
-    rabbitmq_status = "pending"
-    minio_status = "pending"
-    workers_status = "pending"
+    database_status = check_database(db)
+    rabbitmq_status = check_rabbitmq()
+    minio_status = check_minio()
+    workers_status = check_workers(db)
 
-    try:
-        db.execute(text("SELECT 1"))
-        database_status = "up"
-    except Exception:
-        database_status = "down"
+    overall_status = "healthy"
 
-    overall_status = "healthy" if database_status == "up" else "unhealthy"
+    if (
+        database_status == "down"
+        or rabbitmq_status == "down"
+        or minio_status == "down"
+        or workers_status == "down"
+    ):
+        overall_status = "unhealthy"
 
     return {
         "status": overall_status,
@@ -514,7 +516,7 @@ def node_heartbeat(
         "status": node.status,
         "last_heartbeat": node.last_heartbeat
     }
-    
+
 @app.get("/nodes")
 def list_nodes(
     current_user: User = Depends(get_current_user),
