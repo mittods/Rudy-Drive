@@ -9,19 +9,41 @@ function FileSys() {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false)
   const [archivosCargados, setArchivosCargados] = useState<File[]>([])
 
-  // 2. Esta función recibe los archivos cuando el usuario los suelta en el Dropzone
-  const manejarNuevosArchivos = (files: File[]) => {
-    setArchivosCargados((prev) => [...prev, ...files])
-    
-    // Cerramos la ventana emergente automáticamente
+  const manejarNuevosArchivos = async (files: File[]) => {
+    // Cerramos el modal de subida
     setIsModalOpen(false)
 
-    // Notificación de éxito usando el toaster de Chakra v3
-    toaster.create({
-      title: `${files.length} archivo(s) agregados`,
-      description: "Los archivos se han cargado en la lista.",
-      type: "success",
-    })
+    for (const file of files) {
+      try {
+        const formData = new FormData()
+        formData.append("file", file)
+        // El backend necesita asociar el archivo a un usuario para el contrato de RabbitMQ
+        formData.append("user_id", "usuario_actual_id") 
+
+        // Se asume que el backend corre en el puerto 8000 (basado en el README)
+        const response = await fetch("http://localhost:8000/upload", {
+          method: "POST",
+          body: formData,
+        })
+
+        if (!response.ok) throw new Error("Fallo en la comunicación con el backend")
+
+        // Solo si el backend responde exitosamente, actualizamos la UI local
+        setArchivosCargados((prev) => [...prev, file])
+        
+        toaster.create({
+          title: `Archivo subido`,
+          description: `${file.name} se ha enviado al sistema distribuido.`,
+          type: "success",
+        })
+      } catch (error) {
+        toaster.create({
+          title: `Error al subir ${file.name}`,
+          description: "El backend no pudo procesar la solicitud.",
+          type: "error",
+        })
+      }
+    }
   }
 
 
