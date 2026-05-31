@@ -179,3 +179,44 @@ conn.close()
 La descarga normal no va por RabbitMQ. El backend lee directamente de MinIO y responde al usuario.
 
 Si se necesita una descarga diferida, entonces se puede usar `download.chunk`, pero no es el flujo normal.
+
+## 5. Diccionario de datos (BDD)
+
+| Tabla | Campo | Tipo de dato | PK/FK | Descripción |
+|---|---|---|---|---|
+| `USERS` | `id` | `UUID` | `PK` | Identificador único del usuario. |
+| `USERS` | `email` | `VARCHAR` |  | Correo electrónico único. |
+| `USERS` | `password_hash` | `VARCHAR` |  | Hash de la contraseña del usuario. |
+| `USERS` | `created_at` | `TIMESTAMP` |  | Fecha de creación del usuario. |
+| `FILES` | `id` | `UUID` | `PK` | Identificador único del archivo lógico. |
+| `FILES` | `user_id` | `UUID` | `FK` | Referencia al propietario en `USERS.id`. |
+| `FILES` | `filename` | `VARCHAR` |  | Nombre original del archivo. |
+| `FILES` | `size` | `BIGINT` |  | Tamaño total del archivo en bytes. |
+| `FILES` | `content_type` | `VARCHAR` |  | Tipo MIME del archivo. |
+| `FILES` | `status` | `VARCHAR` |  | Estado del archivo (`UPLOADING`, `READY`, `DELETED`, `FAILED`). |
+| `FILES` | `created_at` | `TIMESTAMP` |  | Fecha de registro del archivo. |
+| `FILES` | `updated_at` | `TIMESTAMP` |  | Última actualización del archivo. |
+| `FILE_CHUNKS` | `id` | `UUID` | `PK` | Identificador único del chunk. |
+| `FILE_CHUNKS` | `file_id` | `UUID` | `FK` | Referencia al archivo lógico en `FILES.id`. |
+| `FILE_CHUNKS` | `chunk_index` | `INT` |  | Índice de orden del chunk para reconstrucción. |
+| `FILE_CHUNKS` | `node_id` | `UUID` | `FK` | Nodo asociado al chunk en `NODES.id` (trazabilidad). |
+| `FILE_CHUNKS` | `minio_bucket` | `VARCHAR` |  | Bucket de MinIO donde está almacenado el chunk. |
+| `FILE_CHUNKS` | `object_key` | `VARCHAR` |  | Clave única del objeto en MinIO. |
+| `FILE_CHUNKS` | `etag` | `VARCHAR` |  | Hash/etag de integridad del objeto. |
+| `FILE_CHUNKS` | `size_bytes` | `BIGINT` |  | Tamaño del chunk en bytes. |
+| `FILE_CHUNKS` | `status` | `VARCHAR` |  | Estado del chunk (`AVAILABLE`, `MISSING`, `REPAIRED`). |
+| `FILE_CHUNKS` | `created_at` | `TIMESTAMP` |  | Fecha de almacenamiento del chunk. |
+| `NODES` | `id` | `UUID` | `PK` | Identificador único del nodo. |
+| `NODES` | `hostname` | `VARCHAR` |  | Nombre del nodo. |
+| `NODES` | `ip_address` | `VARCHAR` |  | Dirección IP del nodo. |
+| `NODES` | `status` | `VARCHAR` |  | Estado operativo del nodo (`UP`, `DOWN`, `REPAIRING`). |
+| `NODES` | `last_heartbeat` | `TIMESTAMP` |  | Última señal de actividad del nodo. |
+| `TASKS` | `id` | `UUID` | `PK` | Identificador único de la tarea. |
+| `TASKS` | `file_id` | `UUID` | `FK` | Referencia al archivo asociado en `FILES.id`. |
+| `TASKS` | `node_id` | `UUID` | `FK` | Nodo asignado o ejecutor en `NODES.id`. |
+| `TASKS` | `task_type` | `VARCHAR` |  | Tipo de tarea (`UPLOAD`, `DELETE`, `DOWNLOAD`, `REPAIR`). |
+| `TASKS` | `status` | `VARCHAR` |  | Estado de la tarea (`PENDING`, `RUNNING`, `COMPLETED`, `FAILED`). |
+| `TASKS` | `retry_count` | `INT` |  | Cantidad de reintentos ejecutados. |
+| `TASKS` | `error_message` | `TEXT` |  | Mensaje de error en caso de fallo. |
+| `TASKS` | `created_at` | `TIMESTAMP` |  | Fecha de creación de la tarea. |
+| `TASKS` | `completed_at` | `TIMESTAMP` |  | Fecha de finalización de la tarea. |

@@ -15,13 +15,13 @@ Instrucciones operativas para levantar y verificar el servidor (PC1) y los nodos
   - `rabbitmq`: broker AMQP (puertos 5672, 15672).
   - `worker-upload`, `worker-download`, `worker-delete`: consumidores de colas.
   - `heartbeat`: publica latidos en `node.heartbeat`.
-  - `wireguard-server`: servidor VPN (ej. 10.0.0.1).
+  - WireGuard instalado localmente en el host del servidor (ej. `10.0.0.1`).
 
 - PC2..PC4 (nodos de almacenamiento):
-  - `wireguard-peer`: peer VPN con IP en `10.0.0.0/24`.
+  - WireGuard instalado localmente en cada host con IP en `10.0.0.0/24`.
   - `minio`: servidor de objetos; cada nodo monta rutas locales (p. ej. `/data`, `/data2`) que se exponen como endpoints para el clúster.
 
-La comunicación inter-nodo y servidor se realiza por la red WireGuard; MinIO forma el clúster usando endpoints HTTP accesibles por las IPs internas de la VPN.
+La comunicación inter-nodo y servidor se realiza por la red WireGuard instalada en cada host; MinIO forma el clúster usando endpoints HTTP accesibles por las IPs internas de la VPN.
 
 4. Componentes y responsabilidades
 ---------------------------------
@@ -31,15 +31,15 @@ La comunicación inter-nodo y servidor se realiza por la red WireGuard; MinIO fo
 - `worker-download`: reconstruye objetos desde MinIO.
 - `worker-delete`: elimina prefijos relacionados a un `upload_id`.
 - `heartbeat`: monitor de liveness en `node.heartbeat`.
-- `wireguard-server` / `wireguard-peer`: conectividad VPN.
+- WireGuard del host: conectividad VPN.
 - `minio` (nodos): backend de objetos con despliegue distribuido.
 
 5. Requisitos previos
 ---------------------
 
-- Docker y Docker Compose en cada máquina.
-- Permisos para mapear `/dev/net/tun` y uso de `NET_ADMIN` en contenedores WireGuard.
-- Archivos `wg0.conf` (servidor y peers) con claves generadas.
+- Docker y Docker Compose para RabbitMQ, workers y MinIO.
+- WireGuard instalado localmente en cada máquina.
+- Archivos `wg0.conf` (servidor y peers) con claves generadas para entregar a cada dispositivo.
 
 6. Variables de entorno
 -----------------------
@@ -55,7 +55,7 @@ Defínalas en `.env` dentro de `distributed/` o `distributed/node/` según corre
 - `MINIO_ROOT_PASSWORD` — secret key MinIO (default: `minioadmin123`).
 - `MINIO_BUCKET` — bucket por defecto (default: `rudy-drive`).
 - `MINIO_ENDPOINT` — endpoint único (compatibilidad), ej. `10.0.0.2:9000`.
-- `MINIO_ENDPOINTS` — CSV de endpoints probados por los clientes en orden; ej.: `10.0.0.2:9000,10.0.0.3:9000,10.0.0.4:9000`.
+- `MINIO_ENDPOINTS` — CSV de endpoints probados por los clientes en orden; default: `10.0.0.2:9000`.
 - `MINIO_SECURE` — `true|false` (default: `false`).
 
 - `UPLOAD_CHUNK_SIZE_BYTES` — tamaño de chunk (default: `5242880`).
@@ -70,28 +70,29 @@ Defínalas en `.env` dentro de `distributed/` o `distributed/node/` según corre
 7.1 PC1 (servidor)
 
 1. Colocar/editar `distributed/.env` con los valores necesarios.
-2. Verificar `distributed/wireguard/server/wg0.conf` contiene clave privada del servidor y los peers.
-3. Arrancar:
+2. Instalar WireGuard en el host y cargar el perfil local del servidor usando `distributed/wireguard/server/wg0.conf`.
+3. Arrancar Docker:
 
 ```bash
 cd distributed
 docker compose up -d
 ```
 
-Esto inicia RabbitMQ, workers, heartbeat y WireGuard server.
+Esto inicia RabbitMQ, workers y heartbeat.
 
 7.2 PC2..PC4 (nodos)
 
-1. Copiar el `wg0.conf` del peer a la máquina del nodo (ubicado en `distributed/node/wireguard/wg0.conf`).
-2. Crear `distributed/node/.env` desde `distributed/node/.env.example` y ajustar `MINIO_CLUSTER_ENDPOINTS` y `NODE_HOSTNAME`.
-3. Arrancar en la máquina del nodo:
+1. Instalar WireGuard en el host del nodo y cargar el perfil local correspondiente.
+2. Mantener disponible el archivo `distributed/node/wireguard/wg0.conf/wg0.conf` como entrega para ese dispositivo.
+3. Crear `distributed/node/.env` desde `distributed/node/.env.example` y ajustar `MINIO_CLUSTER_ENDPOINTS` y `NODE_HOSTNAME`.
+4. Arrancar en la máquina del nodo:
 
 ```bash
 cd distributed/node
 docker compose up -d
 ```
 
-Cada nodo levantará `wireguard-peer` y `minio`.
+Cada nodo levantará `minio`; WireGuard corre en el host.
 
 8. Verificaciones operativas
 ---------------------------
@@ -138,11 +139,11 @@ client.publish('upload.chunk', {'upload_id': 'upload-uuid', 'data_base64': 'YWJj
 11. Operaciones comunes
 -----------------------
 
-- Añadir nodo: provisionar máquina, registrar su clave pública en el servidor WireGuard, actualizar `MINIO_CLUSTER_ENDPOINTS` y arrancar MinIO.
+- Añadir nodo: provisionar máquina, registrar su clave pública en el servidor WireGuard, instalar el perfil local correcto, actualizar `MINIO_CLUSTER_ENDPOINTS` y arrancar MinIO.
 - Reemplazar nodo: añadir nodo nuevo y seguir las rutinas de reparación/rebalance de MinIO si procede.
 
 12. Referencias
 --------------
 
 - Código y contratos: `workers/shared/config.py`, `workers/shared/rabbitmq_client.py`, `workers/shared/minio_client.py`, `workers/shared/chunk_storage.py`, `workers/shared/chunk_recovery.py`, `workers/shared/health.py`.
-- Bundle nodos: `distributed/node/docker-compose.yml`, `distributed/node/.env.example`.
+- Bundle nodos: `distributed/node/docker-compose.yml`, `distributed/node/.env.example`, `distributed/node/wireguard/wg0.conf/wg0.conf`.

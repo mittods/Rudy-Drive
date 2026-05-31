@@ -5,3 +5,68 @@
 {'timestamp': '2026-05-30T04:23:47.573925+00:00', 'event': 'worker.started', 'worker': 'upload-worker', 'queue': 'upload.chunk'}
 {'timestamp': '2026-05-30T04:23:47.573963+00:00', 'event': 'worker.started', 'worker': 'delete-worker', 'queue': 'delete.chunk'}
 {'timestamp': '2026-05-30T04:23:47.589850+00:00', 'event': 'worker.started', 'worker': 'download-worker', 'queue': 'download.chunk'}
+{'timestamp': '2026-05-31T18:07:35.988532+00:00', 'event': 'worker.started', 'worker': 'upload-worker', 'queue': 'upload.chunk'}
+{'timestamp': '2026-05-31T18:07:35.991625+00:00', 'event': 'worker.started', 'worker': 'delete-worker', 'queue': 'delete.chunk'}
+{'timestamp': '2026-05-31T18:07:36.118907+00:00', 'event': 'worker.started', 'worker': 'download-worker', 'queue': 'download.chunk'}
+{'timestamp': '2026-05-31T18:09:33.387248+00:00', 'event': 'worker.started', 'worker': 'delete-worker', 'queue': 'delete.chunk'}
+{'timestamp': '2026-05-31T18:09:33.487384+00:00', 'event': 'worker.started', 'worker': 'upload-worker', 'queue': 'upload.chunk'}
+{'timestamp': '2026-05-31T18:09:33.563569+00:00', 'event': 'worker.started', 'worker': 'download-worker', 'queue': 'download.chunk'}
+{'timestamp': '2026-05-31T18:11:33.647491+00:00', 'event': 'worker.started', 'worker': 'download-worker', 'queue': 'download.chunk'}
+{'timestamp': '2026-05-31T18:11:33.722401+00:00', 'event': 'worker.started', 'worker': 'upload-worker', 'queue': 'upload.chunk'}
+{'timestamp': '2026-05-31T18:11:33.769485+00:00', 'event': 'worker.started', 'worker': 'delete-worker', 'queue': 'delete.chunk'}
+{'timestamp': '2026-05-31T19:54:40.173630+00:00', 'event': 'worker.started', 'worker': 'download-worker', 'queue': 'download.chunk'}
+{'timestamp': '2026-05-31T19:54:40.243969+00:00', 'event': 'worker.started', 'worker': 'upload-worker', 'queue': 'upload.chunk'}
+{'timestamp': '2026-05-31T19:54:40.310164+00:00', 'event': 'worker.started', 'worker': 'delete-worker', 'queue': 'delete.chunk'}
+{'timestamp': '2026-05-31T22:13:52.975988+00:00', 'event': 'message.received', 'queue': 'upload.chunk', 'worker': 'upload-worker'}
+{'timestamp': '2026-05-31T22:13:53.516794+00:00', 'event': 'upload.success', 'upload_id': '005c6f1a-8377-4a4e-9693-4ace0857f25b', 'size_bytes': 59}
+{'timestamp': '2026-05-31T22:15:54.969263+00:00', 'event': 'worker.started', 'worker': 'download-worker', 'queue': 'download.chunk'}
+{'timestamp': '2026-05-31T22:15:54.969324+00:00', 'event': 'worker.started', 'worker': 'delete-worker', 'queue': 'delete.chunk'}
+{'timestamp': '2026-05-31T22:15:54.970014+00:00', 'event': 'worker.started', 'worker': 'upload-worker', 'queue': 'upload.chunk'}
+{'timestamp': '2026-05-31T22:16:04.292287+00:00', 'event': 'message.received', 'queue': 'upload.chunk', 'worker': 'upload-worker'}
+{'timestamp': '2026-05-31T22:16:04.310987+00:00', 'event': 'upload.success', 'upload_id': 'fdbd9428-0de3-43ac-99d9-108caf2594b1', 'size_bytes': 59}
+{'timestamp': '2026-05-31T22:16:19.512237+00:00', 'event': 'message.received', 'queue': 'upload.chunk', 'worker': 'upload-worker'}
+{'timestamp': '2026-05-31T22:16:19.532862+00:00', 'event': 'upload.success', 'upload_id': '3484e655-b2ae-430b-b15c-ce8eb55349af', 'size_bytes': 59}
+{'timestamp': '2026-05-31T22:16:20.560857+00:00', 'event': 'message.received', 'queue': 'delete.chunk', 'worker': 'delete-worker'}
+{'timestamp': '2026-05-31T22:16:20.590616+00:00', 'event': 'upload.success', 'upload_id': '3484e655-b2ae-430b-b15c-ce8eb55349af', 'deleted': True}
+{'timestamp': '2026-05-31T22:21:42.808604+00:00', 'event': 'message.received', 'queue': 'upload.chunk', 'worker': 'upload-worker'}
+{'timestamp': '2026-05-31T22:21:42.828660+00:00', 'event': 'upload.success', 'upload_id': '64a842e8-0b22-4cf1-87e5-8f478907d055', 'size_bytes': 59}
+{'timestamp': '2026-05-31T22:21:43.778817+00:00', 'event': 'message.received', 'queue': 'delete.chunk', 'worker': 'delete-worker'}
+{'timestamp': '2026-05-31T22:21:43.786354+00:00', 'event': 'upload.success', 'upload_id': '64a842e8-0b22-4cf1-87e5-8f478907d055', 'deleted': True}
+{'timestamp': '2026-05-31T22:25:38.013252+00:00', 'event': 'message.received', 'queue': 'upload.chunk', 'worker': 'upload-worker'}
+{'timestamp': '2026-05-31T22:25:45.019974+00:00', 'event': 'message.received', 'queue': 'delete.chunk', 'worker': 'delete-worker'}
+{'timestamp': '2026-05-31T22:26:25.168757+00:00', 'event': 'worker.started', 'worker': 'delete-worker', 'queue': 'delete.chunk'}
+{'timestamp': '2026-05-31T22:26:25.168807+00:00', 'event': 'worker.started', 'worker': 'download-worker', 'queue': 'download.chunk'}
+{'timestamp': '2026-05-31T22:26:25.168983+00:00', 'event': 'worker.started', 'worker': 'upload-worker', 'queue': 'upload.chunk'}
+{'timestamp': '2026-05-31T22:26:25.169675+00:00', 'event': 'message.received', 'queue': 'delete.chunk', 'worker': 'delete-worker'}
+{'timestamp': '2026-05-31T22:26:25.169856+00:00', 'event': 'message.received', 'queue': 'upload.chunk', 'worker': 'upload-worker'}
+{'timestamp': '2026-05-31T22:26:31.184524+00:00', 'event': 'message.failed', 'queue': 'delete.chunk', 'error': 'HTTPConnectionPool(host=\'127.0.0.1\', port=9000): Max retries exceeded with url: /rudy-drive?location= (Caused by NewConnectionError("HTTPConnection(host=\'127.0.0.1\', port=9000): Failed to establish a new connection: [Errno 111] Connection refused"))', 'worker': 'delete-worker', 'requeued': True, 'retry_count': 0}
+{'timestamp': '2026-05-31T22:26:31.184619+00:00', 'event': 'message.failed', 'queue': 'upload.chunk', 'error': 'HTTPConnectionPool(host=\'127.0.0.1\', port=9000): Max retries exceeded with url: /rudy-drive?location= (Caused by NewConnectionError("HTTPConnection(host=\'127.0.0.1\', port=9000): Failed to establish a new connection: [Errno 111] Connection refused"))', 'worker': 'upload-worker', 'requeued': True, 'retry_count': 0}
+{'timestamp': '2026-05-31T22:26:31.184838+00:00', 'event': 'message.received', 'queue': 'delete.chunk', 'worker': 'delete-worker'}
+{'timestamp': '2026-05-31T22:26:31.185058+00:00', 'event': 'message.received', 'queue': 'upload.chunk', 'worker': 'upload-worker'}
+{'timestamp': '2026-05-31T22:26:37.197601+00:00', 'event': 'message.failed', 'queue': 'delete.chunk', 'error': 'HTTPConnectionPool(host=\'127.0.0.1\', port=9000): Max retries exceeded with url: /rudy-drive?location= (Caused by NewConnectionError("HTTPConnection(host=\'127.0.0.1\', port=9000): Failed to establish a new connection: [Errno 111] Connection refused"))', 'worker': 'delete-worker', 'requeued': True, 'retry_count': 1}
+{'timestamp': '2026-05-31T22:26:37.197784+00:00', 'event': 'message.failed', 'queue': 'upload.chunk', 'error': 'HTTPConnectionPool(host=\'127.0.0.1\', port=9000): Max retries exceeded with url: /rudy-drive?location= (Caused by NewConnectionError("HTTPConnection(host=\'127.0.0.1\', port=9000): Failed to establish a new connection: [Errno 111] Connection refused"))', 'worker': 'upload-worker', 'requeued': True, 'retry_count': 1}
+{'timestamp': '2026-05-31T22:26:37.198078+00:00', 'event': 'message.received', 'queue': 'delete.chunk', 'worker': 'delete-worker'}
+{'timestamp': '2026-05-31T22:26:37.198171+00:00', 'event': 'message.received', 'queue': 'upload.chunk', 'worker': 'upload-worker'}
+{'timestamp': '2026-05-31T22:26:43.208298+00:00', 'event': 'message.failed', 'queue': 'upload.chunk', 'error': 'HTTPConnectionPool(host=\'127.0.0.1\', port=9000): Max retries exceeded with url: /rudy-drive?location= (Caused by NewConnectionError("HTTPConnection(host=\'127.0.0.1\', port=9000): Failed to establish a new connection: [Errno 111] Connection refused"))', 'worker': 'upload-worker', 'requeued': True, 'retry_count': 2}
+{'timestamp': '2026-05-31T22:26:43.208715+00:00', 'event': 'message.received', 'queue': 'upload.chunk', 'worker': 'upload-worker'}
+{'timestamp': '2026-05-31T22:26:43.209613+00:00', 'event': 'message.failed', 'queue': 'delete.chunk', 'error': 'HTTPConnectionPool(host=\'127.0.0.1\', port=9000): Max retries exceeded with url: /rudy-drive?location= (Caused by NewConnectionError("HTTPConnection(host=\'127.0.0.1\', port=9000): Failed to establish a new connection: [Errno 111] Connection refused"))', 'worker': 'delete-worker', 'requeued': True, 'retry_count': 2}
+{'timestamp': '2026-05-31T22:26:43.209997+00:00', 'event': 'message.received', 'queue': 'delete.chunk', 'worker': 'delete-worker'}
+{'timestamp': '2026-05-31T22:26:48.601984+00:00', 'event': 'worker.started', 'worker': 'upload-worker', 'queue': 'upload.chunk'}
+{'timestamp': '2026-05-31T22:26:48.602952+00:00', 'event': 'message.received', 'queue': 'upload.chunk', 'worker': 'upload-worker'}
+{'timestamp': '2026-05-31T22:26:48.636719+00:00', 'event': 'worker.started', 'worker': 'download-worker', 'queue': 'download.chunk'}
+{'timestamp': '2026-05-31T22:26:48.663342+00:00', 'event': 'worker.started', 'worker': 'delete-worker', 'queue': 'delete.chunk'}
+{'timestamp': '2026-05-31T22:26:48.664179+00:00', 'event': 'message.received', 'queue': 'delete.chunk', 'worker': 'delete-worker'}
+{'timestamp': '2026-05-31T22:26:49.384106+00:00', 'event': 'upload.success', 'upload_id': '9f388d19-afea-4204-a4da-e9a4cf7eaf6c', 'deleted': True}
+{'timestamp': '2026-05-31T22:26:49.594507+00:00', 'event': 'upload.success', 'upload_id': '9f388d19-afea-4204-a4da-e9a4cf7eaf6c', 'size_bytes': 59}
+{'timestamp': '2026-05-31T22:26:56.293657+00:00', 'event': 'message.received', 'queue': 'upload.chunk', 'worker': 'upload-worker'}
+{'timestamp': '2026-05-31T22:26:57.182853+00:00', 'event': 'upload.success', 'upload_id': 'ff7fc49a-7b6c-435b-a737-3d259ebf9eb8', 'size_bytes': 59}
+{'timestamp': '2026-05-31T22:26:57.685658+00:00', 'event': 'message.received', 'queue': 'delete.chunk', 'worker': 'delete-worker'}
+{'timestamp': '2026-05-31T22:26:58.515190+00:00', 'event': 'upload.success', 'upload_id': 'ff7fc49a-7b6c-435b-a737-3d259ebf9eb8', 'deleted': True}
+{'timestamp': '2026-05-31T22:31:02.548020+00:00', 'event': 'message.received', 'queue': 'upload.chunk', 'worker': 'upload-worker'}
+{'timestamp': '2026-05-31T22:31:03.238459+00:00', 'event': 'upload.success', 'upload_id': '80bdc5e5-a0e9-49b4-8939-f9344e4d48d0', 'size_bytes': 59}
+{'timestamp': '2026-05-31T22:31:03.911438+00:00', 'event': 'message.received', 'queue': 'delete.chunk', 'worker': 'delete-worker'}
+{'timestamp': '2026-05-31T22:31:04.662483+00:00', 'event': 'upload.success', 'upload_id': '80bdc5e5-a0e9-49b4-8939-f9344e4d48d0', 'deleted': True}
+{'timestamp': '2026-05-31T22:38:19.178858+00:00', 'event': 'message.received', 'queue': 'upload.chunk', 'worker': 'upload-worker'}
+{'timestamp': '2026-05-31T22:38:20.975872+00:00', 'event': 'message.received', 'queue': 'delete.chunk', 'worker': 'delete-worker'}
+{'timestamp': '2026-05-31T22:38:21.136399+00:00', 'event': 'upload.success', 'upload_id': 'c8dca2a2-54bc-4066-a27c-8d5ea904c588', 'deleted': True}
+{'timestamp': '2026-05-31T22:38:22.292860+00:00', 'event': 'upload.success', 'upload_id': 'c8dca2a2-54bc-4066-a27c-8d5ea904c588', 'size_bytes': 1048576}

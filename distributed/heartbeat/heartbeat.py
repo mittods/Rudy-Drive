@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 import pika
 
 
-HOST = os.getenv("RABBITMQ_HOST", "rabbitmq")
+HOST = os.getenv("RABBITMQ_HOST", "127.0.0.1")
 PORT = int(os.getenv("RABBITMQ_PORT", "5672"))
 USER = os.getenv("RABBITMQ_DEFAULT_USER", "guest")
 PASSWORD = os.getenv("RABBITMQ_DEFAULT_PASS", "guest")

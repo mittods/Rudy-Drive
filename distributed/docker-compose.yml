@@ -1,22 +1,4 @@
 services:
-  wireguard-server:
-    build:
-      context: ./wireguard
-    container_name: wireguard-server
-    hostname: wireguard-server
-    cap_add:
-      - NET_ADMIN
-    devices:
-      - /dev/net/tun:/dev/net/tun
-    sysctls:
-      net.ipv4.ip_forward: "1"
-    volumes:
-      - ./wireguard/server/wg0.conf:/etc/wireguard/wg0.conf:ro
-    ports:
-      - "51820:51820/udp"
-    command: sh -lc "wg-quick up /etc/wireguard/wg0.conf && tail -f /dev/null"
-    restart: unless-stopped
-
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
@@ -55,13 +37,12 @@ services:
     hostname: worker-upload
     depends_on:
       - rabbitmq
-      - wireguard-server
     environment:
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-guest}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-guest}
-      MINIO_ENDPOINTS: ${MINIO_ENDPOINTS:-10.0.0.2:9000,10.0.0.3:9000,10.0.0.4:9000}
+      MINIO_ENDPOINTS: ${MINIO_ENDPOINTS:-10.0.0.2:9000}
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
       MINIO_BUCKET: ${MINIO_BUCKET:-rudy-drive}
@@ -78,13 +59,12 @@ services:
     hostname: worker-download
     depends_on:
       - rabbitmq
-      - wireguard-server
     environment:
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-guest}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-guest}
-      MINIO_ENDPOINTS: ${MINIO_ENDPOINTS:-10.0.0.2:9000,10.0.0.3:9000,10.0.0.4:9000}
+      MINIO_ENDPOINTS: ${MINIO_ENDPOINTS:-10.0.0.2:9000}
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
       MINIO_BUCKET: ${MINIO_BUCKET:-rudy-drive}
@@ -100,13 +80,12 @@ services:
     hostname: worker-delete
     depends_on:
       - rabbitmq
-      - wireguard-server
     environment:
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-guest}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-guest}
-      MINIO_ENDPOINTS: ${MINIO_ENDPOINTS:-10.0.0.2:9000,10.0.0.3:9000,10.0.0.4:9000}
+      MINIO_ENDPOINTS: ${MINIO_ENDPOINTS:-10.0.0.2:9000}
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
       MINIO_BUCKET: ${MINIO_BUCKET:-rudy-drive}
