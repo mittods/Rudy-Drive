@@ -8,6 +8,7 @@ node/.env
 node/*.env
 
 # MinIO data directories (local mounts)
+minio/
 node/minio/data/
 node/minio/data2/
 minio/data/
