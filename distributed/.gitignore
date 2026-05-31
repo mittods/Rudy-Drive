@@ -1,0 +1,54 @@
+# Environment and secrets
+.env
+*.secrets
+secrets.env
+
+# Node-specific envs
+node/.env
+node/*.env
+
+# MinIO data directories (local mounts)
+node/minio/data/
+node/minio/data2/
+minio/data/
+minio/data2/
+
+# Docker compose local overrides
+docker-compose.override.yml
+docker-compose.*.local.yml
+
+# Logs and runtime files
+*.log
+logs/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# IDE and editor
+.vscode/
+.idea/
+
+# WireGuard sensitive files (private keys/configs)
+wireguard/**/wg0.conf
+wireguard/**/private*
+node/wireguard/**/wg0.conf
+node/wireguard/**/private*
+
+# TLS / key material
+*.pem
+*.key
+*.crt
+
+# OS
+.DS_Store
+
+# Test and cache
+.pytest_cache/
+.tox/
+.cache/
+.mypy_cache/
