@@ -1,0 +1,116 @@
+services:
+  wireguard-server:
+    build:
+      context: ./wireguard
+    container_name: wireguard-server
+    hostname: wireguard-server
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    sysctls:
+      net.ipv4.ip_forward: "1"
+    volumes:
+      - ./wireguard/server/wg0.conf:/etc/wireguard/wg0.conf:ro
+    ports:
+      - "51820:51820/udp"
+    command: sh -lc "wg-quick up /etc/wireguard/wg0.conf && tail -f /dev/null"
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    hostname: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-rudy}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-rudy123}
+    volumes:
+      - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    restart: unless-stopped
+
+  heartbeat:
+    build:
+      context: ./heartbeat
+    container_name: heartbeat
+    hostname: heartbeat
+    depends_on:
+      - rabbitmq
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-guest}
+      HEARTBEAT_INTERVAL_SECONDS: 10
+      HEARTBEAT_QUEUE: node.heartbeat
+    restart: unless-stopped
+
+  worker-upload:
+    build:
+      context: ./workers
+    container_name: worker-upload
+    hostname: worker-upload
+    depends_on:
+      - rabbitmq
+      - wireguard-server
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-guest}
+      MINIO_ENDPOINTS: ${MINIO_ENDPOINTS:-10.0.0.2:9000,10.0.0.3:9000,10.0.0.4:9000}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+      MINIO_BUCKET: ${MINIO_BUCKET:-rudy-drive}
+      UPLOAD_CHUNK_SIZE_BYTES: ${UPLOAD_CHUNK_SIZE_BYTES:-5242880}
+    volumes:
+      - ./logs:/app/logs
+    command: ["python", "-m", "workers.upload_worker"]
+    restart: unless-stopped
+
+  worker-download:
+    build:
+      context: ./workers
+    container_name: worker-download
+    hostname: worker-download
+    depends_on:
+      - rabbitmq
+      - wireguard-server
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-guest}
+      MINIO_ENDPOINTS: ${MINIO_ENDPOINTS:-10.0.0.2:9000,10.0.0.3:9000,10.0.0.4:9000}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+      MINIO_BUCKET: ${MINIO_BUCKET:-rudy-drive}
+    volumes:
+      - ./logs:/app/logs
+    command: ["python", "-m", "workers.download_worker"]
+    restart: unless-stopped
+
+  worker-delete:
+    build:
+      context: ./workers
+    container_name: worker-delete
+    hostname: worker-delete
+    depends_on:
+      - rabbitmq
+      - wireguard-server
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-guest}
+      MINIO_ENDPOINTS: ${MINIO_ENDPOINTS:-10.0.0.2:9000,10.0.0.3:9000,10.0.0.4:9000}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+      MINIO_BUCKET: ${MINIO_BUCKET:-rudy-drive}
+    volumes:
+      - ./logs:/app/logs
+    command: ["python", "-m", "workers.delete_worker"]
+    restart: unless-stopped
