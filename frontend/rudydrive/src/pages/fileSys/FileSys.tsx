@@ -1,6 +1,6 @@
-import { Grid, GridItem, Heading, Box, Field, Input, Button, Center,Stack,Text, Progress, Tooltip } from "@chakra-ui/react"
+import { Grid, GridItem, Heading, Box, Field, Input, Button, Center,Stack,Text, Progress, Tooltip, HStack } from "@chakra-ui/react"
 import React, { useState } from "react"
-import { FiSearch, FiFolderPlus, FiServer} from "react-icons/fi"
+import { FiSearch, FiFolderPlus, FiServer, FiDownload} from "react-icons/fi"
 import { UploadModal } from "../../components/ui/uploadModal" // 👈 Importamos tu ventana emergente
 import { toaster } from "../../components/ui/toaster"
 
@@ -43,6 +43,41 @@ function FileSys() {
           type: "error",
         })
       }
+    }
+  }
+
+  const descargarArchivo = async (filename: string) => {
+    try {
+      // El backend recupera de MinIO y responde con el flujo de datos (binary stream)
+      const response = await fetch(`http://localhost:8000/download/${filename}`)
+      
+      if (!response.ok) throw new Error("No se pudo descargar el archivo")
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      
+      // Creamos un link temporal para disparar la descarga en el navegador
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', filename)
+      document.body.appendChild(link)
+      link.click()
+      
+      // Limpieza
+      link.parentNode?.removeChild(link)
+      window.URL.revokeObjectURL(url)
+
+      toaster.create({
+        title: "Descarga iniciada",
+        description: `Descargando ${filename}...`,
+        type: "success",
+      })
+    } catch (error) {
+      toaster.create({
+        title: "Error de descarga",
+        description: "El servidor no pudo entregar el archivo.",
+        type: "error",
+      })
     }
   }
 
@@ -113,9 +148,14 @@ function FileSys() {
                   <Text color="gray.400" fontSize="sm">No hay archivos subidos aún.</Text>
                 ) : (
                   archivosCargados.map((arc, i) => (
-                    <Text key={i} fontSize="sm" color="gray.600">
-                      📄 {arc.name} — {(arc.size / 1024).toFixed(1)} KB
-                    </Text>
+                    <HStack key={i} justify="space-between" p="2" _hover={{ bg: "gray.50" }} borderRadius="md">
+                      <Text fontSize="sm" color="gray.600">
+                        📄 {arc.name} — {(arc.size / 1024).toFixed(1)} KB
+                      </Text>
+                      <Button size="xs" variant="ghost" onClick={() => descargarArchivo(arc.name)}>
+                        <FiDownload />
+                      </Button>
+                    </HStack>
                   ))
                 )}
               </Stack>
