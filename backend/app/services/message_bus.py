@@ -1,17 +1,13 @@
-# app/services/message_bus.py
-
 import json
+import os
+
 import pika
 
 from minio import Minio
-from app.config import (
-    RABBITMQ_HOST,
-    RABBITMQ_PORT,
-    MINIO_ENDPOINT,
-    MINIO_ACCESS_KEY,
-    MINIO_SECRET_KEY,
-    MINIO_SECURE
-)
+from app.config import load_settings
+
+
+settings = load_settings()
 
 
 def publish_message(
@@ -21,8 +17,16 @@ def publish_message(
 
     connection = pika.BlockingConnection(
         pika.ConnectionParameters(
-            host=settings.RABBITMQ_HOST,
-            port=settings.RABBITMQ_PORT
+            host=settings.rabbitmq.host,
+            port=settings.rabbitmq.port,
+            credentials=pika.PlainCredentials(
+                settings.rabbitmq.user,
+                settings.rabbitmq.password,
+            ),
+            virtual_host=settings.rabbitmq.vhost,
+            connection_attempts=3,
+            retry_delay=2,
+            blocked_connection_timeout=30,
         )
     )
 
@@ -53,10 +57,10 @@ def get_file_stream(
 ):
 
     client = Minio(
-        endpoint=settings.MINIO_ENDPOINT,
-        access_key=settings.MINIO_ACCESS_KEY,
-        secret_key=settings.MINIO_SECRET_KEY,
-        secure=settings.MINIO_SECURE
+        endpoint=settings.minio.endpoint,
+        access_key=settings.minio.access_key,
+        secret_key=settings.minio.secret_key,
+        secure=settings.minio.secure
     )
 
     response = client.get_object(

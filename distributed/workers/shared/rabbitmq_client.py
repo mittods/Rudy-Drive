@@ -20,6 +20,10 @@ class RabbitMQClient:
             port=self.config.port,
             virtual_host=self.config.vhost,
             credentials=credentials,
+            heartbeat=600,
+            connection_attempts=3,
+            retry_delay=2,
+            blocked_connection_timeout=300,
         )
 
     def connect(self) -> pika.BlockingConnection:

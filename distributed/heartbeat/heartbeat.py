@@ -3,6 +3,7 @@ import os
 import socket
 import time
 from datetime import datetime, timezone
+from urllib import error, request
 
 import pika
 
@@ -14,6 +15,21 @@ PASSWORD = os.getenv("RABBITMQ_DEFAULT_PASS", "guest")
 QUEUE = os.getenv("HEARTBEAT_QUEUE", "node.heartbeat")
 INTERVAL_SECONDS = int(os.getenv("HEARTBEAT_INTERVAL_SECONDS", "10"))
 NODE_NAME = os.getenv("HEARTBEAT_NODE_NAME", socket.gethostname())
+BACKEND_HEARTBEAT_URL = os.getenv("BACKEND_HEARTBEAT_URL", "http://backend:8000/internal/nodes/heartbeat")
+
+
+def notify_backend(payload: dict) -> None:
+    req = request.Request(
+        BACKEND_HEARTBEAT_URL,
+        data=json.dumps(payload, separators=(",", ":")).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with request.urlopen(req, timeout=5) as response:
+            response.read()
+    except (error.HTTPError, error.URLError, TimeoutError) as exc:
+        print(f"backend heartbeat error: {exc}", flush=True)
 
 
 def connect() -> pika.BlockingConnection:
@@ -42,6 +58,7 @@ def main() -> None:
                     body=body,
                     properties=pika.BasicProperties(delivery_mode=2),
                 )
+                notify_backend(payload)
                 print(body.decode("utf-8"), flush=True)
                 time.sleep(INTERVAL_SECONDS)
         except Exception as exc:

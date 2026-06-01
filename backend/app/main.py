@@ -1,12 +1,24 @@
+from base64 import b64decode
 from datetime import datetime
-from fastapi import FastAPI, HTTPException, Depends
+import io
+import os
+import threading
+import time
+from typing import Iterable
+
+from fastapi import Depends, FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy.orm import Session
-from sqlalchemy import text
+from minio import Minio
+from minio.error import S3Error
 from fastapi.responses import StreamingResponse
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+import urllib3
 
 
 from app.services.message_bus import publish_message, get_file_stream
+from app.config import load_settings
 from app.schemas import (
     UserRegister, 
     UserLogin,
@@ -27,15 +39,17 @@ from app.auth import (
     verify_token,
     get_current_user
 )
-from app.database import engine, Base, get_db
+from app.database import engine, Base, get_db, SessionLocal
 from app.models import User, File, Task, FileChunk, Node
-from app.database import Base, get_db
-from app.services.health_service import (
+from app.services.health_services import (
     check_database,
     check_rabbitmq,
     check_minio,
     check_workers
 )
+
+
+settings = load_settings()
 
 app = FastAPI(
     title="Rudy Drive API",
@@ -43,26 +57,173 @@ app = FastAPI(
     version="1.0.0"
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 Base.metadata.create_all(bind=engine)
 security = HTTPBearer()
+
+
+def _chunk_object_name(file_id: str, chunk_index: int) -> str:
+    return f"{file_id}/chunk_{chunk_index}"
+
+
+def _build_file_chunks(file_id: str, raw_data: bytes) -> list[FileChunk]:
+    records: list[FileChunk] = []
+    for chunk_index, start in enumerate(range(0, len(raw_data), settings.upload_chunk_size_bytes)):
+        chunk = raw_data[start : start + settings.upload_chunk_size_bytes]
+        records.append(
+            FileChunk(
+                file_id=file_id,
+                chunk_index=chunk_index,
+                minio_bucket=settings.minio.bucket,
+                object_key=_chunk_object_name(file_id, chunk_index),
+                size_bytes=len(chunk),
+                status="pending",
+            )
+        )
+    return records
+
+
+def _build_minio_client(endpoint: str) -> Minio:
+    http_client = urllib3.PoolManager(
+        timeout=urllib3.Timeout(connect=2, read=8),
+        retries=False,
+    )
+    return Minio(
+        endpoint=endpoint,
+        access_key=settings.minio.access_key,
+        secret_key=settings.minio.secret_key,
+        secure=settings.minio.secure,
+        http_client=http_client,
+    )
+
+
+def _collect_known_chunks(db: Session) -> list[FileChunk]:
+    return db.query(FileChunk).filter(
+        FileChunk.object_key.isnot(None),
+        FileChunk.minio_bucket.isnot(None)
+    ).order_by(
+        FileChunk.file_id.asc(),
+        FileChunk.chunk_index.asc()
+    ).all()
+
+
+def _repair_minio_endpoint(
+    target_endpoint: str,
+    chunks: list[FileChunk],
+    candidate_endpoints: tuple[str, ...]
+) -> dict[str, int | str]:
+    target_client = _build_minio_client(target_endpoint)
+    source_endpoints = [endpoint for endpoint in candidate_endpoints if endpoint != target_endpoint]
+
+    copied = 0
+    skipped = 0
+    errors = 0
+
+    for chunk in chunks:
+        try:
+            target_client.stat_object(chunk.minio_bucket, chunk.object_key)
+            continue
+        except S3Error as exc:
+            if exc.code != "NoSuchKey":
+                errors += 1
+                continue
+
+        repaired = False
+        for source_endpoint in source_endpoints:
+            source_client = _build_minio_client(source_endpoint)
+            try:
+                response = source_client.get_object(chunk.minio_bucket, chunk.object_key)
+                try:
+                    payload = response.read()
+                finally:
+                    response.close()
+                    response.release_conn()
+
+                target_client.put_object(
+                    bucket_name=chunk.minio_bucket,
+                    object_name=chunk.object_key,
+                    data=io.BytesIO(payload),
+                    length=len(payload),
+                    content_type="application/octet-stream",
+                )
+                copied += 1
+                repaired = True
+                break
+            except Exception:
+                continue
+
+        if not repaired:
+            skipped += 1
+
+    return {
+        "endpoint": target_endpoint,
+        "copied": copied,
+        "skipped": skipped,
+        "errors": errors,
+    }
+
+
+def _repair_storage_cluster(db: Session, target_endpoint: str | None = None) -> dict:
+    chunks = _collect_known_chunks(db)
+    candidate_endpoints = tuple(settings.minio.endpoints) or (settings.minio.endpoint,)
+
+    endpoints = [target_endpoint] if target_endpoint else list(candidate_endpoints)
+    reports = []
+    for endpoint in endpoints:
+        if endpoint not in candidate_endpoints:
+            continue
+        try:
+            reports.append(_repair_minio_endpoint(endpoint, chunks, candidate_endpoints))
+        except Exception as exc:
+            reports.append({
+                "endpoint": endpoint,
+                "copied": 0,
+                "skipped": len(chunks),
+                "errors": len(chunks),
+                "error": str(exc),
+            })
+
+    return {
+        "known_chunks": len(chunks),
+        "repairs": reports,
+    }
+
+
+def _storage_repair_daemon() -> None:
+    interval_seconds = int(os.getenv("STORAGE_REPAIR_INTERVAL_SECONDS", "300"))
+    while True:
+        time.sleep(interval_seconds)
+        _run_storage_repair_job()
+
+
+def _run_storage_repair_job(target_endpoint: str | None = None) -> dict:
+    db = SessionLocal()
+    try:
+        result = _repair_storage_cluster(db, target_endpoint=target_endpoint)
+        db.commit()
+        return result
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
+
+
+@app.on_event("startup")
+def start_storage_repair_daemon() -> None:
+    thread = threading.Thread(target=_storage_repair_daemon, daemon=True)
+    thread.start()
 
 @app.get("/")
 def home():
     return {"message": "Rudy Drive API funcionando"}
-
-@app.get("/me")
-def get_me(
-    credentials: HTTPAuthorizationCredentials = Depends(security)
-):
-
-    token = credentials.credentials
-
-    email = verify_token(token)
-
-    return {
-        "email": email,
-        "message": "Token válido"
-    }
 
 @app.get("/health")
 def health_check(db: Session = Depends(get_db)):
@@ -115,6 +276,7 @@ def register(
     db.refresh(new_user)
 
     return {
+        "user_id": new_user.id,
         "message": "Usuario registrado correctamente"
     }
 
@@ -150,7 +312,9 @@ def login(
 
     return {
         "access_token": token,
-        "token_type": "bearer"
+        "token_type": "bearer",
+        "user_id": db_user.id,
+        "email": db_user.email,
     }
 
 @app.post("/files")
@@ -178,6 +342,11 @@ def create_file(
     db.commit()
     db.refresh(new_file)
 
+    raw_data = b64decode(file_data.data_base64)
+    file_chunks = _build_file_chunks(new_file.id, raw_data)
+    db.add_all(file_chunks)
+    db.commit()
+
     new_task = Task(
         file_id=new_file.id,
         task_type="upload",
@@ -203,6 +372,17 @@ def create_file(
     return {
         "task_id": new_task.id,
         "status": "queued"
+    }
+
+@app.get("/me")
+def get_me(
+    current_user: User = Depends(get_current_user)
+):
+
+    return {
+        "user_id": current_user.id,
+        "email": current_user.email,
+        "message": "Token válido"
     }
 
 @app.get("/files")
@@ -262,7 +442,7 @@ def download_file(
         FileChunk.file_id == file.id
     ).order_by(
         FileChunk.chunk_index.asc()
-    ).first()
+    ).all()
 
     if not chunk:
         raise HTTPException(
@@ -271,13 +451,49 @@ def download_file(
         )
 
     try:
-        file_stream = get_file_stream(
-            bucket=chunk.minio_bucket,
-            object_key=chunk.object_key
-        )
+        candidate_endpoints = tuple(settings.minio.endpoints) or (settings.minio.endpoint,)
+        chunk_endpoints: list[str] = []
+
+        for item in chunk:
+            selected_endpoint: str | None = None
+            last_error: Exception | None = None
+
+            for endpoint in candidate_endpoints:
+                client = _build_minio_client(endpoint)
+                try:
+                    client.stat_object(item.minio_bucket, item.object_key)
+                    selected_endpoint = endpoint
+                    break
+                except S3Error as exc:
+                    if exc.code == "NoSuchKey":
+                        continue
+                    last_error = exc
+                except Exception as exc:
+                    last_error = exc
+
+            if selected_endpoint is None:
+                if last_error is not None:
+                    raise last_error
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Chunk no encontrado para el archivo {file.id}"
+                )
+
+            chunk_endpoints.append(selected_endpoint)
+
+        def stream_file():
+            for item, endpoint in zip(chunk, chunk_endpoints):
+                client = _build_minio_client(endpoint)
+                response = client.get_object(item.minio_bucket, item.object_key)
+                try:
+                    for part in response.stream(32 * 1024):
+                        yield part
+                finally:
+                    response.close()
+                    response.release_conn()
 
         return StreamingResponse(
-            file_stream,
+            stream_file(),
             media_type=file.content_type,
             headers={
                 "Content-Disposition": f'attachment; filename="{file.filename}"'
@@ -404,9 +620,12 @@ def task_success(
 
     if task.task_type == "upload":
         file.status = "ready"
+        for chunk in db.query(FileChunk).filter(FileChunk.file_id == file.id).all():
+            chunk.status = "ready"
 
     elif task.task_type == "delete":
         file.status = "deleted"
+        db.query(FileChunk).filter(FileChunk.file_id == file.id).delete(synchronize_session=False)
 
     db.commit()
 
@@ -447,6 +666,8 @@ def task_failure(
     task.retry_count = task.retry_count + 1
 
     file.status = "failed"
+    for chunk in db.query(FileChunk).filter(FileChunk.file_id == file.id).all():
+        chunk.status = "failed"
 
     db.commit()
 
@@ -534,3 +755,75 @@ def list_nodes(
         }
         for node in nodes
     ]
+
+
+@app.get("/nodes/storage-chunks")
+def list_storage_nodes_chunks(
+    db: Session = Depends(get_db)
+):
+    known_chunks = db.query(FileChunk).filter(
+        FileChunk.object_key.isnot(None),
+        FileChunk.minio_bucket.isnot(None)
+    ).order_by(FileChunk.file_id.asc(), FileChunk.chunk_index.asc()).all()
+
+    candidate_endpoints = tuple(settings.minio.endpoints) or (settings.minio.endpoint,)
+    nodes: list[dict] = []
+
+    for endpoint in candidate_endpoints:
+        node_report = {
+            "endpoint": endpoint,
+            "status": "up",
+            "chunk_count": 0,
+            "chunks": []
+        }
+
+        try:
+            client = _build_minio_client(endpoint)
+            for chunk in known_chunks:
+                try:
+                    stat = client.stat_object(chunk.minio_bucket, chunk.object_key)
+                except S3Error as exc:
+                    if exc.code == "NoSuchKey":
+                        continue
+                    raise
+
+                node_report["chunks"].append(
+                    {
+                        "chunk_id": chunk.id,
+                        "file_id": chunk.file_id,
+                        "chunk_index": chunk.chunk_index,
+                        "bucket": chunk.minio_bucket,
+                        "object_key": chunk.object_key,
+                        "size_bytes": stat.size,
+                        "etag": stat.etag,
+                    }
+                )
+        except Exception as exc:
+            node_report["status"] = "down"
+            node_report["error"] = str(exc)
+            node_report["chunks"] = []
+
+        node_report["chunk_count"] = len(node_report["chunks"])
+        nodes.append(node_report)
+
+    return {
+        "total_known_chunks": len(known_chunks),
+        "nodes": nodes
+    }
+
+
+@app.post("/internal/storage/repair")
+def repair_storage_nodes(
+    target_endpoint: str | None = None,
+):
+    thread = threading.Thread(
+        target=_run_storage_repair_job,
+        kwargs={"target_endpoint": target_endpoint},
+        daemon=True,
+    )
+    thread.start()
+    return {
+        "status": "accepted",
+        "target_endpoint": target_endpoint,
+        "message": "Storage repair started in background",
+    }

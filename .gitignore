@@ -1,0 +1,65 @@
+# Environment and secrets
+.env
+.env.*
+*.secrets
+secrets.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.pytest_cache/
+.tox/
+.mypy_cache/
+.cache/
+
+# Node / frontend
+node_modules/
+dist/
+build/
+.vite/
+
+# IDE and editor
+.vscode/
+.idea/
+
+# Logs and runtime files
+*.log
+logs/
+*.pid
+*.out
+
+# Docker compose local overrides
+docker-compose.override.yml
+docker-compose.*.local.yml
+
+# WireGuard sensitive files
+wireguard/**/wg0.conf
+wireguard/**/private*
+node/wireguard/**/wg0.conf
+node/wireguard/**/private*
+
+# MinIO local data and mounts
+minio/
+data/
+data2/
+node/minio/data/
+node/minio/data2/
+distributed/minio/
+distributed/node/minio/
+
+# TLS / key material
+*.pem
+*.key
+*.crt
+
+# OS
+.DS_Store
+
+# Coverage / reports
+coverage/
+htmlcov/
+*.cover
